@@ -9,12 +9,9 @@ fn main() -> io::Result<()> {
     let exe_path = std::env::current_exe()?.with_file_name("converter.exe");
     let exe_str = exe_path.to_str().unwrap();
 
-    // 1. Очищаем старые записи (если были)
     let _ = classes.delete_subkey_all(r"*\shell\ConvertVideo");
-    let _ = classes.delete_subkey_all(r"MyConverterMenu"); // Удаляем старую структуру подменю
-
-    // 2. Создаем структуру самого подменю
-    // Внутри ключа "shell" будут лежать наши форматы
+    let _ = classes.delete_subkey_all(r"MyConverterMenu"); 
+    
     let (submenu_key, _) = classes.create_subkey(r"MyConverterMenu\shell")?;
 
     let formats = [
@@ -23,27 +20,21 @@ fn main() -> io::Result<()> {
     ];
 
     for (name, ext) in formats {
-        // Создаем ключ для конкретного формата (например, "mp4")
         let (fmt_key, _) = submenu_key.create_subkey(ext)?;
         
-        // Текст пункта (MP4, AVI и т.д.)
         fmt_key.set_value("MUIVerb", &name)?;
         
-
-        // Сама команда
         let (cmd_key, _) = fmt_key.create_subkey("command")?;
         let command = format!("\"{}\" \"%1\" {}", exe_str, ext);
         cmd_key.set_value("", &command)?;
     }
-
-    // 3. Создаем главный пункт "Конвертировать в"
+    
     let (parent_key, _) = classes.create_subkey(r"*\shell\ConvertVideo")?;
     parent_key.set_value("MUIVerb", &"Конвертировать в")?;
 
     
-    // 4. Привязываем наше подменю к главному пункту
     parent_key.set_value("ExtendedSubCommandsKey", &"MyConverterMenu")?;
 
-    println!("Установщик (ExtendedSubCommandsKey) успешно отработал!");
+    println!("Установщик успешно отработал!");
     Ok(())
 }
